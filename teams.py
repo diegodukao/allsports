@@ -2,7 +2,7 @@ from style import *
 from players import List_players, Create_player
 from events import List_events, Create_event
 from games import List_games, Create_game
-from statistics import List_team_stats, List_team_heats
+from statistics import List_team_stats, List_team_heats, List_team_temp
 
  
 ###################################################
@@ -28,9 +28,9 @@ class Create_team(Normal_screen):
 		fl.add_widget(self.ti_time)
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)
@@ -99,14 +99,14 @@ class List_teams(Normal_screen):
 				for name in names:
 					b_team = List_btn(text=name[0])
 					if self.menu:
-						b_team.bind(on_press=partial(self._go_team, b_team))
+						b_team.bind(on_release=partial(self._go_team, b_team))
 					else:
-						b_team.bind(on_press=partial(self._return_to_previous_screen, b_team))
+						b_team.bind(on_release=partial(self._return_to_previous_screen, b_team))
 					bl.add_widget(b_team)
 			else:
 				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
@@ -157,56 +157,60 @@ class Team(Normal_screen):
 		bl.add_widget(Title_lb(text='Team: %s'%(team_name)))
 		
 		b_players = Nav_btn(text='Players')
-		b_players.bind(on_press=self._go_list_players)
+		b_players.bind(on_release=self._go_list_players)
 		bl.add_widget(b_players)
 		
 		b_new_player = New_btn(text='New player')
-		b_new_player.bind(on_press=self._go_new_player)
+		b_new_player.bind(on_release=self._go_new_player)
 		bl.add_widget(b_new_player)
 
 		b_games = Nav_btn(text='Games')
-		b_games.bind(on_press=self._go_list_games)
+		b_games.bind(on_release=self._go_list_games)
 		bl.add_widget(b_games)
 		
 		b_new_game = New_btn(text='New game')
-		b_new_game.bind(on_press=self._go_new_game)
+		b_new_game.bind(on_release=self._go_new_game)
 		bl.add_widget(b_new_game)
 
 		b_stats = List_btn(text='Statistics', background_color=(1,1,0,1))
-		b_stats.bind(on_press=self._go_list_team_stats)
+		b_stats.bind(on_release=self._go_list_team_stats)
 		bl.add_widget(b_stats)
 
 		b_heats = List_btn(text='Heats', background_color=(1,1,0,1))
-		b_heats.bind(on_press=self._go_list_team_heats)
+		b_heats.bind(on_release=self._go_list_team_heats)
 		bl.add_widget(b_heats)
+
+		b_temp = List_btn(text='Temporal', background_color=(1,1,0,1))
+		b_temp.bind(on_release=self._go_list_team_temp)
+		bl.add_widget(b_temp)
 		
 		b_events = Nav_btn(text='Events')
-		b_events.bind(on_press=self._go_list_events)
+		b_events.bind(on_release=self._go_list_events)
 		bl.add_widget(b_events)
 		
 		b_new_event = New_btn(text='New event')
-		b_new_event.bind(on_press=self._go_new_event)
+		b_new_event.bind(on_release=self._go_new_event)
 		bl.add_widget(b_new_event)
 
 		b_import_events = Nav_btn(text='Import events')
-		b_import_events.bind(on_press=self._import_events)
+		b_import_events.bind(on_release=self._import_events)
 		bl.add_widget(b_import_events)
 
 
 		b_field = Nav_btn(text='Add/Change field')
-		b_field.bind(on_press=partial(self.filechooser, team_name))
+		b_field.bind(on_release=partial(self.filechooser, team_name))
 		bl.add_widget(b_field)
 
 		b_time = Nav_btn(text='Change games\' length')
-		b_time.bind(on_press=self.change_time)
+		b_time.bind(on_release=self.change_time)
 		bl.add_widget(b_time)
 
 		b_delete = Red_btn(text='Delete')
-		b_delete.bind(on_press=self._confirm_popup)
+		b_delete.bind(on_release=self._confirm_popup)
 		bl.add_widget(b_delete)
 		
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
@@ -220,14 +224,14 @@ class Team(Normal_screen):
 		content.add_widget(self.ti_time)
 
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self.confirm_time)
+		b_conf.bind(on_release=self.confirm_time)
 		b_cancel = Form_btn(text='Cancel')
 
 		content.add_widget(b_conf)
 		content.add_widget(b_cancel)
 
 		self.pp = Popup(title='New games\' length', content=content, size_hint_y=.3)
-		b_cancel.bind(on_press=self.pp.dismiss)
+		b_cancel.bind(on_release=self.pp.dismiss)
 		self.pp.open()
 
 	def confirm_time(self, *args):
@@ -259,7 +263,7 @@ class Team(Normal_screen):
 		bl.add_widget(b_view)
 		root.add_widget(bl)
 
-		b_view.bind(on_press=self.change_view)
+		b_view.bind(on_release=self.change_view)
 
 		self.fc.add_widget(FileChooserListLayout())
 		self.fc.add_widget(FileChooserIconLayout())
@@ -267,8 +271,8 @@ class Team(Normal_screen):
 		
 		self.pp = Popup(title='Select the field image', content=root)
 		
-		b_open.bind(on_press=partial(self._load, team_name))
-		b_cancel.bind(on_press=self.pp.dismiss)
+		b_open.bind(on_release=partial(self._load, team_name))
+		b_cancel.bind(on_release=self.pp.dismiss)
 		self.pp.open()
 
 	def _load(self, team_name, *args):
@@ -304,8 +308,8 @@ class Team(Normal_screen):
 		content.add_widget(cancel_btn)
 
 		self.popup = Popup(title="Confirm you want to delete %s\'s records" % (self.team_name), content=content, size_hint=(0.8, 0.4))
-		cancel_btn.bind(on_press=self.popup.dismiss)
-		confirm_btn.bind(on_press=self.delete_team)
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self.delete_team)
 		self.popup.open()
 
 	def delete_team(self, *args):
@@ -332,6 +336,11 @@ class Team(Normal_screen):
 		if not self.manager.has_screen(self.team_name + '_heats'):
 			self.manager.add_widget(List_team_heats(self.team_name, name=self.team_name + '_heats'))
 		self.manager.current = self.team_name + '_heats'
+
+	def _go_list_team_temp(self, *args):
+		if not self.manager.has_screen(self.team_name + '_temp'):
+			self.manager.add_widget(List_team_temp(self.team_name, name=self.team_name + '_temp'))
+		self.manager.current = self.team_name + '_temp'
 		
 	def _go_new_player(self, *args):
 		if not self.manager.has_screen(self.team_name + '_new_player'):

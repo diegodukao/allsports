@@ -1,5 +1,5 @@
 from style import *
-from statistics import List_player_stats, List_player_heats
+from statistics import List_player_stats, List_player_heats, List_player_temp
 
 class List_players(Normal_screen):
 	def __init__(self, team_name, **args):
@@ -24,12 +24,12 @@ class List_players(Normal_screen):
 			if len(names):
 				for name in names:
 					b_player = List_btn(text=name[0])
-					b_player.bind(on_press=partial(self._go_player, b_player))
+					b_player.bind(on_release=partial(self._go_player, b_player))
 					bl.add_widget(b_player)
 			else:
 				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
@@ -65,9 +65,9 @@ class Create_player(Normal_screen):
 		fl.add_widget(self.ti_name)
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)
@@ -119,23 +119,27 @@ class Player(Normal_screen):
 		bl.add_widget(Title_lb(text='Player: %s'%(player_name)))
 
 		b_stats = List_btn(text='Statistics', background_color=(1,1,0,1))
-		b_stats.bind(on_press=self._go_list_stats)
+		b_stats.bind(on_release=self._go_list_stats)
 		bl.add_widget(b_stats)
 
 		b_heats= List_btn(text='Heats', background_color=(1,1,0,1))
-		b_heats.bind(on_press=self._go_list_heats)
+		b_heats.bind(on_release=self._go_list_heats)
 		bl.add_widget(b_heats)
 
+		b_temp= List_btn(text='Temporal', background_color=(1,1,0,1))
+		b_temp.bind(on_release=self._go_list_temp)
+		bl.add_widget(b_temp)
+
 		b_rename = Nav_btn(text='Rename')
-		b_rename.bind(on_press=self._go_rename)
+		b_rename.bind(on_release=self._go_rename)
 		bl.add_widget(b_rename)
 
 		b_delete = Red_btn(text='Delete')
-		b_delete.bind(on_press=self._confirm_popup)
+		b_delete.bind(on_release=self._confirm_popup)
 		bl.add_widget(b_delete)
 		
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
@@ -151,6 +155,11 @@ class Player(Normal_screen):
 			self.manager.add_widget(List_player_heats(self.team_name, self.player_name, name=self.team_name + '_' + self.player_name + '_list_heats'))
 		self.manager.current = self.team_name + '_' + self.player_name + '_list_heats'
 
+	def _go_list_temp(self, *args):
+		if not self.manager.has_screen(self.team_name + '_' + self.player_name + '_list_temp'):
+			self.manager.add_widget(List_player_temp(self.team_name, self.player_name, name=self.team_name + '_' + self.player_name + '_list_temp'))
+		self.manager.current = self.team_name + '_' + self.player_name + '_list_temp'
+
 	def _confirm_popup(self, *args):
 		content = GridLayout(cols=2)
 		confirm_btn = Button(text='Confirm', background_color=(1, 0, 0, 1))
@@ -159,8 +168,8 @@ class Player(Normal_screen):
 		content.add_widget(cancel_btn)
 
 		self.popup = Popup(title="Confirm you want to delete %s records" % (self.player_name), content=content, size_hint=(0.8, 0.4))
-		cancel_btn.bind(on_press=self.popup.dismiss)
-		confirm_btn.bind(on_press=self.delete_player)
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self.delete_player)
 		self.popup.open()
 
 	def _go_rename(self, *args):
@@ -217,9 +226,9 @@ class Rename_player(Normal_screen):
 		fl.add_widget(self.new_player_name)
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)

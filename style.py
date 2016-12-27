@@ -3,6 +3,8 @@ import os
 import sqlite3 as lite
 import numpy as np
 from PIL import Image as Img, ImageFilter as ImgF
+import time
+import random
 
 from kivy.utils import platform
 from kivy.uix.filechooser import FileChooser, FileChooserIconLayout, FileChooserListLayout
@@ -18,16 +20,15 @@ from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
 from kivy.garden.graph import Graph, MeshLinePlot
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.accordion import Accordion, AccordionItem
-import random
 from kivy.uix.image import Image
+from kivy.core.audio import SoundLoader, Sound
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import *
 from kivy.uix.floatlayout import FloatLayout
 
 from jnius import autoclass
 
-button_h = 90
+button_h = 50
 font_size = 20
 title_font_size = 20
 
@@ -157,7 +158,7 @@ class W_popup(Popup):
 		
 		self.content = bl
 		
-		b_close.bind(on_press=self.dismiss)
+		b_close.bind(on_release=self.dismiss)
 		super(W_popup, self).__init__(**args)
 
 

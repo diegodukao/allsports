@@ -1,5 +1,5 @@
 import kivy
-kivy.require('1.8.0')
+kivy.require('1.9.0')
 
 from style import *
 
@@ -14,6 +14,8 @@ from kivy.core.window import Window
 from teams import Create_team, List_teams
 
 ###################################################
+
+base_dir = "/home/tiago/"
 
 
 class Menu(Normal_screen):
@@ -122,7 +124,7 @@ class Menu(Normal_screen):
 
 		b_view.bind(on_release=self.change_view)
 
-		self.fc = FileChooser(multiselect=True)
+		self.fc = FileChooser(multiselect=True, path=base_dir)
 		self.fc.add_widget(FileChooserListLayout())
 		self.fc.add_widget(FileChooserIconLayout())
 		root.add_widget(self.fc)
@@ -175,6 +177,9 @@ class AllSports(App):
 			return True
 
 	def on_pause(self, *args):
+		return True
+
+	def on_stop(self, *args):
 		return True
 
 if __name__ == '__main__':

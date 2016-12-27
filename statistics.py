@@ -27,12 +27,12 @@ class List_player_stats(Normal_screen):
 			if len(self.list_games):
 				for event in self.list_events:
 					b_event = Nav_btn(text=event[0])
-					b_event.bind(on_press=partial(self._graph_popup, b_event.text))
+					b_event.bind(on_release=partial(self._graph_popup, b_event.text))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='There are no game records to show'))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
@@ -78,7 +78,7 @@ class List_player_stats(Normal_screen):
 		content.add_widget(back_btn)
 
 		self.popup = Popup(title='%s - %s Graph' % (self.player_name, event_name), content=content, size_hint=(1, 1))
-		back_btn.bind(on_press=self.popup.dismiss)
+		back_btn.bind(on_release=self.popup.dismiss)
 		self.popup.open()		
 		
 	def on_back_pressed(self, *args):
@@ -113,12 +113,12 @@ class List_team_stats(Normal_screen):
 			if len(self.list_events):
 				for event in self.list_events:
 					b_event = Nav_btn(text=event[0])
-					b_event.bind(on_press=partial(self._graph_popup, b_event.text))
+					b_event.bind(on_release=partial(self._graph_popup, b_event.text))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
@@ -164,7 +164,7 @@ class List_team_stats(Normal_screen):
 		content.add_widget(back_btn)
 
 		self.popup = Popup(title='%s - %s Graph' % (self.team_name, event_name), content=content, size_hint=(1, 1))
-		back_btn.bind(on_press=self.popup.dismiss)
+		back_btn.bind(on_release=self.popup.dismiss)
 		self.popup.open()		
 		
 	def on_back_pressed(self, *args):
@@ -201,7 +201,7 @@ class Game_stats(Normal_screen):
 				if len(self.events):
 					for game_event in self.events:
 						b_game_event = Nav_btn(text='%s' % (game_event[0]))
-						b_game_event.bind(on_press=partial(self._graph_popup, game_event[0],game_event[1]))
+						b_game_event.bind(on_release=partial(self._graph_popup, game_event[0],game_event[1]))
 						bl.add_widget(b_game_event)
 						bl.add_widget(List_btn(text='Total: %d'%(game_event[2]), background_color=(.5,0,.5,1)))
 				else:
@@ -211,7 +211,7 @@ class Game_stats(Normal_screen):
 				bl.add_widget(Label(text='Database error.', color=(1,0,0,1)))
 
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
@@ -238,7 +238,7 @@ class Game_stats(Normal_screen):
 		content.add_widget(back_btn)
 
 		self.popup = Popup(title='%s - %s\'s statistics' % (self.team_name, event_name), content=content, size_hint=(1, 1))
-		back_btn.bind(on_press=self.popup.dismiss)
+		back_btn.bind(on_release=self.popup.dismiss)
 		self.popup.open()		
 
 	def on_back_pressed(self, *args):
@@ -270,18 +270,20 @@ class List_player_heats(Normal_screen):
 			if len(self.list_events):
 				for event in self.list_events:
 					b_event = Nav_btn(text=event[0])
-					b_event.bind(on_press=partial(self._graph_popup, event[1]))
+					b_event.bind(on_release=partial(self._graph_popup, (event[1], event[0])))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='There are no event records to show'))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
 		self.add_widget(root)
 
-	def _graph_popup(self, event_id,  *args):
+	def _graph_popup(self, event, *args):
+		event_id = event[0]
+		event_name = event[1]
 		try:
 			
 			content = GridLayout(cols=1)
@@ -298,23 +300,21 @@ class List_player_heats(Normal_screen):
 				cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
 				cur.execute('select x, y from game_events where player_name=? and event_id=?;', (self.player_name, event_id))
 				events_pos = cur.fetchall()
-				events_pos = [(x, y) for x, y in events_pos if x > -1 and y > -1]
+				events_pos = [(int(x*field.size[0]), int((1-y)*field.size[1])) for x, y in events_pos if x > -1 and y > -1]
 			if not len(events_pos):
 				content.add_widget(Image(source='temp_field.png', allow_stretch=True))
 
 			else:
 				img = np.zeros((field.size[0],field.size[1]))
 				for i, j in events_pos:   
-					img[int(i*field.size[0]), int((1-j)*field.size[1])] += 10000000
-
+					img[i, j] += 10000000
 
 				maximum = int(np.amax(img))
 
-				img2 = Img.new('RGBA', (field.size[0],field.size[1]), "white") 
+				img2 = Img.new('RGBA', (field.size[0],field.size[1]), (0,0,0,0)) 
 				pixels = img2.load()
 
-				for i in range(img2.size[0]): 
-					for j in range(img2.size[1]):
+				for i, j in events_pos:
 						try:
 							pixels[i,j] = ((255 * int(img[i,j])) // maximum, 0, 0,(255 * int(img[i,j])) // maximum)
 						except Exception as exc:
@@ -332,8 +332,8 @@ class List_player_heats(Normal_screen):
 			back_btn = Back_btn(text='Back')
 			content.add_widget(back_btn)
 
-			self.popup = Popup(title='Heat map', content=content, size_hint=(1, 1), separator_height=0, title_align='center')
-			back_btn.bind(on_press=self.popup.dismiss)
+			self.popup = Popup(title='%s heat map'%event_name, content=content, size_hint=(1, 1), separator_height=0, title_align='center')
+			back_btn.bind(on_release=self.popup.dismiss)
 			self.popup.open()		
 		except Exception as exc:
 			pp = W_popup('Did you forgot to add a field\' image?' ,'Error!')
@@ -368,18 +368,20 @@ class List_team_heats(Normal_screen):
 			if len(self.list_events):
 				for event in self.list_events:
 					b_event = Nav_btn(text=event[0])
-					b_event.bind(on_press=partial(self._graph_popup, event[1]))
+					b_event.bind(on_release=partial(self._graph_popup, (event[1], event[0])))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='There are no event records to show'))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
 		self.add_widget(root)
 
-	def _graph_popup(self, event_id,  *args):
+	def _graph_popup(self, event, *args):
+		event_id = event[0]
+		event_name = event[1]
 		try:
 			
 			content = GridLayout(cols=1)
@@ -396,23 +398,21 @@ class List_team_heats(Normal_screen):
 				cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
 				cur.execute('select x, y from game_events where team_name=? and event_id=?;', (self.team_name, event_id))
 				events_pos = cur.fetchall()
-				events_pos = [(x, y) for x, y in events_pos if x > -1 and y > -1]
+				events_pos = [(int(x*field.size[0]), int((1-y)*field.size[1])) for x, y in events_pos if x > -1 and y > -1]
 			if not len(events_pos):
 				content.add_widget(Image(source='temp_field.png', allow_stretch=True))
 
 			else:
 				img = np.zeros((field.size[0],field.size[1]))
 				for i, j in events_pos:   
-					img[int(i*field.size[0]), int((1-j)*field.size[1])] += 10000000
-
+					img[i, j] += 10000000
 
 				maximum = int(np.amax(img))
 
-				img2 = Img.new('RGBA', (field.size[0],field.size[1]), "white") 
+				img2 = Img.new('RGBA', (field.size[0],field.size[1]), (0,0,0,0)) 
 				pixels = img2.load()
 
-				for i in range(img2.size[0]): 
-					for j in range(img2.size[1]):
+				for i, j in events_pos:
 						try:
 							pixels[i,j] = ((255 * int(img[i,j])) // maximum, 0, 0,(255 * int(img[i,j])) // maximum)
 						except Exception as exc:
@@ -430,8 +430,8 @@ class List_team_heats(Normal_screen):
 			back_btn = Back_btn(text='Back')
 			content.add_widget(back_btn)
 
-			self.popup = Popup(title='Heat map', content=content, size_hint=(1, 1), separator_height=0, title_align='center')
-			back_btn.bind(on_press=self.popup.dismiss)
+			self.popup = Popup(title='%s heat map'%event_name, content=content, size_hint=(1, 1), separator_height=0, title_align='center')
+			back_btn.bind(on_release=self.popup.dismiss)
 			self.popup.open()		
 		except Exception as exc:
 			pp = W_popup('Did you forgot to add a field\' image?' ,'Error!')
@@ -468,25 +468,25 @@ class List_game_heats(Normal_screen):
 			if len(self.list_events):
 				for event in self.list_events:
 					b_event = Nav_btn(text=event[0])
-					b_event.bind(on_press=partial(self._graph_popup, event[1]))
+					b_event.bind(on_release=partial(self._graph_popup, (event[1], event[0])))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='There are no event records to show'))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
 		self.add_widget(root)
 
-	def _graph_popup(self, event_id,  *args):
+	def _graph_popup(self, event, *args):
+		event_id = event[0]
+		event_name = event[1]
 		try:
-			
 			content = GridLayout(cols=1)
 
 			with lite.connect('allsports.db') as conn:
 				cur = conn.cursor()
-
 				with open('temp_field.png', 'wb') as wf:
 					wf.write(cur.execute('select field from teams where name=?;', (self.team_name,)).fetchone()[0])
 				
@@ -496,23 +496,21 @@ class List_game_heats(Normal_screen):
 				cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
 				cur.execute('select x, y from game_events where game_id=? and event_id=?;', (self.game[3], event_id))
 				events_pos = cur.fetchall()
-				events_pos = [(x, y) for x, y in events_pos if x > -1 and y > -1]
+				events_pos = [(int(x*field.size[0]), int((1-y)*field.size[1])) for x, y in events_pos if x > -1 and y > -1]
 			if not len(events_pos):
 				content.add_widget(Image(source='temp_field.png', allow_stretch=True))
 
 			else:
 				img = np.zeros((field.size[0],field.size[1]))
 				for i, j in events_pos:   
-					img[int(i*field.size[0]), int((1-j)*field.size[1])] += 10000000
-
+					img[i, j] += 10000000
 
 				maximum = int(np.amax(img))
 
-				img2 = Img.new('RGBA', (field.size[0],field.size[1]), "white") 
+				img2 = Img.new('RGBA', (field.size[0],field.size[1]), (0,0,0,0)) 
 				pixels = img2.load()
 
-				for i in range(img2.size[0]): 
-					for j in range(img2.size[1]):
+				for i, j in events_pos:
 						try:
 							pixels[i,j] = ((255 * int(img[i,j])) // maximum, 0, 0,(255 * int(img[i,j])) // maximum)
 						except Exception as exc:
@@ -530,10 +528,11 @@ class List_game_heats(Normal_screen):
 			back_btn = Back_btn(text='Back')
 			content.add_widget(back_btn)
 
-			self.popup = Popup(title='Heat map', content=content, size_hint=(1, 1), separator_height=0, title_align='center')
-			back_btn.bind(on_press=self.popup.dismiss)
+			self.popup = Popup(title='%s heat map'%event_name, content=content, size_hint=(1, 1), separator_height=0, title_align='center')
+			back_btn.bind(on_release=self.popup.dismiss)
 			self.popup.open()		
 		except Exception as exc:
+			print(exc)
 			pp = W_popup('Did you forgot to add a field\' image?' ,'Error!')
 			pp.open()			
 			
@@ -541,6 +540,295 @@ class List_game_heats(Normal_screen):
 	def on_back_pressed(self, *args):
 		self.manager.current = self.back_name
 		self.manager.remove_widget(self.manager.get_screen(self.name))
+
+
+class List_player_temp(Normal_screen):
+	def __init__(self, team_name, player_name, **args):
+		super(List_player_temp, self).__init__(**args)
+		self.team_name = team_name
+		self.player_name = player_name
+		
+	def on_enter(self, **args):
+		self.clear_widgets()
+		
+		root = ScrollView()
+
+		bl = Base_layout()
+		bl.bind(minimum_height=bl.setter('height'))
+		bl.add_widget(Title_lb(text='%s temporal'%(self.player_name)))
+		
+		conn = lite.connect('allsports.db')
+		with conn:
+			cur = conn.cursor()
+			cur.execute('create table if not exists events(id integer primary key autoincrement, name varchar(40), team_name varchar(40), foreign key (team_name) references teams(name) on delete cascade on update cascade);')
+			cur.execute('select name, id from events where team_name=?', (self.team_name,))
+			self.list_events = cur.fetchall()
+
+			if len(self.list_events):
+				for event in self.list_events:
+					b_event = Nav_btn(text=event[0])
+					b_event.bind(on_release=partial(self._graph_popup, b_event.text))
+					bl.add_widget(b_event)
+			else:
+				bl.add_widget(List_btn(text='No events were created yet'))
+
+		b_back = Back_btn(text='Back')
+		b_back.bind(on_release=self.on_back_pressed)
+		bl.add_widget(b_back)
+
+		root.add_widget(bl)
+		self.add_widget(root)
+
+	def _graph_popup(self, event_name,  *args):
+		content = GridLayout(cols=1)
+		try:
+			event_id = [i[1] for i in self.list_events if i[0] == event_name][0]
+		except Exception as exc:
+			print(exc)
+			return
+
+		with lite.connect('allsports.db') as conn:
+			cur = conn.cursor()
+			cur.execute('select games_length from teams where name=?;', (self.team_name,))
+			games_length = cur.fetchall()[0][0]
+
+			cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
+			cur.execute('select time from game_events where event_id=? and player_name=?;', (event_id, self.player_name))
+			events = cur.fetchall()
+			events = [i for i in events if i[0]>-1]
+
+			temporal_dist = {}
+			for i in range(1, games_length+1):
+				temporal_dist[i] = 0
+
+			for event in events:
+				temporal_dist[event[0]] += 1
+
+			maximum = max(temporal_dist.values())
+
+			if maximum < 10:
+				maximum = 10
+
+			temporal_dist = list(temporal_dist.items())
+		
+		if len(events):
+			try:
+				graph = Graph(xlabel='Minutes', ylabel='Occurrences', x_ticks_major=len(temporal_dist)/25, y_ticks_major=maximum/20+1 ,y_grid_label=True , x_grid_label=True, padding=5, x_grid=True, y_grid=True,  xmin=1, xmax=len(temporal_dist)+1, ymin=0, ymax=maximum+1)
+				plot = MeshLinePlot(color=[1, 0, 0, 1])
+				plot.points =temporal_dist
+				graph.add_plot(plot)
+				content.add_widget(graph)
+
+			except Exception as exc:
+				print(exc)
+				content.add_widget(List_btn(text='No records to show'))
+		else:
+			content.add_widget(List_btn(text='No records to show'))
+
+		back_btn = Back_btn(text='Back')
+		content.add_widget(back_btn)
+
+		self.popup = Popup(title='%s - %s Temporal Distribution' % (self.player_name, event_name), content=content, size_hint=(1, 1))
+		back_btn.bind(on_release=self.popup.dismiss)
+		self.popup.open()		
+		
+	def on_back_pressed(self, *args):
+		self.manager.current = self.team_name + '_' + self.player_name
+		self.manager.remove_widget(self.manager.get_screen(self.name))
+
+
+
+class List_team_temp(Normal_screen):
+	def __init__(self, team_name, **args):
+		super(List_team_temp, self).__init__(**args)
+		self.team_name = team_name
+		
+	def on_enter(self, **args):
+		self.clear_widgets()
+		
+		root = ScrollView()
+
+		bl = Base_layout()
+		bl.bind(minimum_height=bl.setter('height'))
+		bl.add_widget(Title_lb(text='%s temporal'%(self.team_name)))
+		
+		conn = lite.connect('allsports.db')
+		with conn:
+			cur = conn.cursor()
+			cur.execute('create table if not exists events(id integer primary key autoincrement, name varchar(40), team_name varchar(40), foreign key (team_name) references teams(name) on delete cascade on update cascade);')
+			cur.execute('select name, id from events where team_name=?', (self.team_name,))
+			self.list_events = cur.fetchall()
+	
+			if len(self.list_events):
+				for event in self.list_events:
+					b_event = Nav_btn(text=event[0])
+					b_event.bind(on_release=partial(self._graph_popup, b_event.text))
+					bl.add_widget(b_event)
+			else:
+				bl.add_widget(List_btn(text='No events were created yet', background_color=(1,1,1,0)))
+		b_back = Back_btn(text='Back')
+		b_back.bind(on_release=self.on_back_pressed)
+		bl.add_widget(b_back)
+
+		root.add_widget(bl)
+		self.add_widget(root)
+
+	def _graph_popup(self, event_name,  *args):
+		content = GridLayout(cols=1)
+		
+		try:
+			event_id = [i[1] for i in self.list_events if i[0] == event_name][0]
+		except Exception as exc:
+			print(exc)
+			return
+
+		with lite.connect('allsports.db') as conn:
+			cur = conn.cursor()
+			cur.execute('select games_length from teams where name=?;', (self.team_name,))
+			games_length = cur.fetchall()[0][0]
+			
+			cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
+			cur.execute('select time from game_events where event_id=? and team_name=?;', (event_id, self.team_name))
+			events = cur.fetchall()
+			events = [i for i in events if i[0]>-1]
+
+			temporal_dist = {}
+			for i in range(1, games_length+1):
+				temporal_dist[i] = 0
+
+			for event in events:
+				temporal_dist[event[0]] += 1
+
+			maximum = max(temporal_dist.values())
+
+			if maximum < 10:
+				maximum = 10
+
+			temporal_dist = list(temporal_dist.items())
+
+		
+		if len(events):
+			try:
+				graph = Graph(xlabel='Minutes', ylabel='Occurrences', x_ticks_major=len(temporal_dist)/25, y_ticks_major=maximum/20+1 ,y_grid_label=True , x_grid_label=True, padding=5, x_grid=True, y_grid=True,  xmin=1, xmax=len(temporal_dist)+1, ymin=0, ymax=maximum+1)
+				plot = MeshLinePlot(color=[1, 0, 0, 1])
+				plot.points =temporal_dist
+				graph.add_plot(plot)
+				content.add_widget(graph)
+
+			except Exception as exc:
+				print(exc)
+				content.add_widget(List_btn(text='No records to show'))
+		else:
+			content.add_widget(List_btn(text='No records to show'))
+
+		back_btn = Back_btn(text='Back')
+		content.add_widget(back_btn)
+
+		self.popup = Popup(title='%s - %s Temporal Distribution' % (self.team_name, event_name), content=content, size_hint=(1, 1))
+		back_btn.bind(on_release=self.popup.dismiss)
+		self.popup.open()		
+		
+	
+		
+	def on_back_pressed(self, *args):
+		self.manager.current = self.team_name
+		self.manager.remove_widget(self.manager.get_screen(self.name))
+
+
+class List_game_temp(Normal_screen):
+	def __init__(self, team_name, game, **args):
+		super(List_game_temp, self).__init__(**args)
+		self.team_name = team_name
+		self.game = game
+		
+	def on_enter(self, **args):
+		self.clear_widgets()
+		
+		root = ScrollView()
+
+		bl = Base_layout()
+		bl.bind(minimum_height=bl.setter('height'))
+		bl.add_widget(Title_lb(text='%s vs %s temporal'%(self.team_name, self.game[0])))
+		
+		conn = lite.connect('allsports.db')
+		with conn:
+			cur = conn.cursor()
+			cur.execute('create table if not exists events(id integer primary key autoincrement, name varchar(40), team_name varchar(40), foreign key (team_name) references teams(name) on delete cascade on update cascade);')
+			cur.execute('select name, id from events where team_name=?', (self.team_name,))
+			self.list_events = cur.fetchall()
+
+			if len(self.list_events):
+				for event in self.list_events:
+					b_event = Nav_btn(text=event[0])
+					b_event.bind(on_release=partial(self._graph_popup, b_event.text))
+					bl.add_widget(b_event)
+			else:
+				bl.add_widget(List_btn(text='No events were created yet', background_color=(1,1,1,0)))
+		b_back = Back_btn(text='Back')
+		b_back.bind(on_release=self.on_back_pressed)
+		bl.add_widget(b_back)
+
+		root.add_widget(bl)
+		self.add_widget(root)
+
+	def _graph_popup(self, event_name,  *args):
+		content = GridLayout(cols=1)
+		
+		try:
+			event_id = [i[1] for i in self.list_events if i[0] == event_name][0]
+		except Exception as exc:
+			print(exc)
+			return
+
+		with lite.connect('allsports.db') as conn:
+			cur = conn.cursor()
+			cur.execute('select games_length from teams where name=?;', (self.team_name,))
+			games_length = cur.fetchall()[0][0]
+			
+			cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
+			cur.execute('select time from game_events where event_id=? and team_name=? and game_id=?;', (event_id, self.team_name, self.game[3]))
+			events = cur.fetchall()
+			events = [i for i in events if i[0]>-1]
+
+			temporal_dist = {}
+			for i in range(1, games_length+1):
+				temporal_dist[i] = 0
+
+			for event in events:
+				temporal_dist[event[0]] += 1
+		
+			maximum = max(temporal_dist.values())
+
+			if maximum < 10:
+				maximum = 10
+
+			temporal_dist = list(temporal_dist.items())
+
+		if len(events):
+			try:
+				graph = Graph(xlabel='Minutes', ylabel='Occurrences', x_ticks_major=len(temporal_dist)/25, y_ticks_major=maximum/20+1 ,y_grid_label=True , x_grid_label=True, padding=5, x_grid=True, y_grid=True,  xmin=1, xmax=len(temporal_dist)+1, ymin=0, ymax=maximum+1)
+				plot = MeshLinePlot(color=[1, 0, 0, 1])
+				plot.points =temporal_dist
+				graph.add_plot(plot)
+				content.add_widget(graph)
+
+			except Exception as exc:
+				print(exc)
+				content.add_widget(List_btn(text='No records to show'))
+		else:
+			content.add_widget(List_btn(text='No records to show'))
+
+		back_btn = Back_btn(text='Back')
+		content.add_widget(back_btn)
+
+		self.popup = Popup(title='%s vs %s - %s Temporal Distribution' % (self.team_name, self.game[3], event_name), content=content, size_hint=(1, 1))
+		back_btn.bind(on_release=self.popup.dismiss)
+		self.popup.open()	
+
+	def on_back_pressed(self, *args):
+		self.manager.current = '%s_%s_%s' % (self.team_name, self.game[0], self.game[1])
+		self.manager.remove_widget(self.manager.get_screen(self.name))	
+
 
 class List_game_events(Normal_screen):
 	def __init__(self, team_name, game, **args):
@@ -564,7 +852,7 @@ class List_game_events(Normal_screen):
 			cur = conn.cursor()
 			try:
 				cur.execute('create table if not exists game_events(id integer primary key autoincrement, event_id integer, team_name varchar(100), player_name varchar(100), game_id integer, time numeric, x float, y float, foreign key (event_id) references events(id) on update cascade on delete cascade, foreign key (game_id) references games(id) on update cascade on delete cascade, foreign key (player_name, team_name) references players(name, team_name) on update cascade on delete cascade);')
-				cur.execute('select events.name, game_events.player_name, game_events.time from game_events join events on game_events.event_id=events.id where game_events.game_id=?;', (str(self.game[3]),))
+				cur.execute('select events.name, game_events.player_name, game_events.time from game_events join events on game_events.event_id=events.id where game_events.game_id=? order by game_events.time;', (str(self.game[3]),))
 				game_events = cur.fetchall()
 				if len(game_events):
 					for game_event in game_events:
@@ -581,7 +869,7 @@ class List_game_events(Normal_screen):
 				pp.open()
 
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)

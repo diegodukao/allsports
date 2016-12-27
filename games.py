@@ -1,6 +1,7 @@
 from style import *
 
-from statistics import Game_stats, List_game_heats, List_game_events
+from statistics import Game_stats, List_game_heats, List_game_events, List_game_temp
+from records import List_game_records
 
 class Create_game(Normal_screen):
 	def __init__(self, team_name, **args):
@@ -26,9 +27,9 @@ class Create_game(Normal_screen):
 		
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)
@@ -96,21 +97,21 @@ class List_games(Normal_screen):
 			cur = conn.cursor()
 			cur.execute('pragma foreign_keys = on;')
 			cur.execute('create table if not exists games(id integer primary key autoincrement, team_name varchar(100), opponent_name varchar(100), date varchar(10), open integer, foreign key(team_name) references teams(name) on delete cascade on update cascade);')
-			cur.execute('select opponent_name, date, open, id from games where team_name=? order by id desc;', (self.team_name,))
+			cur.execute('select opponent_name, date, open, id from games where team_name=? order by date desc;', (self.team_name,))
 			games = cur.fetchall()
 			if len(games):
 				for game in games:
 					b_game = List_btn(text='%s | %s' % (game[0], game[1]))
 					if game[2]:
-						b_game.bind(on_press=partial(self._go_open_game, game))
+						b_game.bind(on_release=partial(self._go_open_game, game))
 						b_game.background_color = (1, 1, 0, 1)
 					else:	
-						b_game.bind(on_press=partial(self._go_closed_game, game))
+						b_game.bind(on_release=partial(self._go_closed_game, game))
 					bl.add_widget(b_game)
 			else:
 				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 
 		root.add_widget(bl)
@@ -151,27 +152,69 @@ class Closed_game(Normal_screen):
 		bl.add_widget(Title_lb(text=self.date_game))
 		
 		b_stats = List_btn(text='Statistics', background_color=(1,1,0,1))
-		b_stats.bind(on_press=self._go_game_stats)
+		b_stats.bind(on_release=self._go_game_stats)
 		bl.add_widget(b_stats)
 
 		b_heat = List_btn(text='Heat', background_color=(0,1,1,1))
-		b_heat.bind(on_press=self._go_list_game_heats)
+		b_heat.bind(on_release=self._go_list_game_heats)
 		bl.add_widget(b_heat)
 
+		b_temp = Nav_btn(text='Temporal', background_color=(1,.5,.5,1))
+		b_temp.bind(on_release=self._go_list_game_temp)
+		bl.add_widget(b_temp)
+
+		if platform == 'android':
+
+			b_list_game_records = Nav_btn(text='Records\' List', background_color=(1,0,1,1))
+			b_list_game_records.bind(on_release=self._go_list_records)
+			bl.add_widget(b_list_game_records)
+
+			b_remove_records = Red_btn(text='Remove Records')
+			b_remove_records.bind(on_release=self._confirm_popup_rec)
+			bl.add_widget(b_remove_records)		
+
 		b_list_game_events = Nav_btn(text='List')
-		b_list_game_events.bind(on_press=self._go_list_game_events)
+		b_list_game_events.bind(on_release=self._go_list_game_events)
 		bl.add_widget(b_list_game_events)
 
 		b_delete = Red_btn(text='Delete')
-		b_delete.bind(on_press=self._confirm_popup)
+		b_delete.bind(on_release=self._confirm_popup)
 		bl.add_widget(b_delete)
 
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
 		self.add_widget(root)
+
+
+	def _confirm_popup_rec(self, *args):
+		content = GridLayout(cols=2)
+		confirm_btn = Button(text='Confirm', background_color=(1, 0, 0, 1))
+		content.add_widget(confirm_btn)
+		cancel_btn = Button(text='Cancel')
+		content.add_widget(cancel_btn)
+
+		self.popup = Popup(title="Confirm you want to delete this game's records", content=content, size_hint=(0.8, 0.4))
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self._remove_records)
+		self.popup.open()
+
+	def _remove_records(self, *args):
+		self.popup.dismiss()
+		conn = lite.connect('allsports.db')
+		try:
+			with conn:
+				cur = conn.cursor()
+				cur.execute('pragma foreign_keys = on;')
+				cur.execute('create table if not exists records(id integer primary key autoincrement, game_id integer, tape blob, foreign key (game_id) references games(id) on delete cascade on update cascade);')
+				cur.execute('delete from records where game_id=?;', (self.game[3],))
+				pp = W_popup('Records successfuly removed.', 'Success!')
+				pp.open()
+		except Exception as exc:
+			pp = W_popup(str(exc) ,'Error!')
+			pp.open()
 
 	def _go_list_game_heats(self, *args):
 		if not self.manager.has_screen('%s_%s_%s_heats' % (self.team_name, self.opponent_name, self.date_game)):
@@ -183,10 +226,20 @@ class Closed_game(Normal_screen):
 			self.manager.add_widget(List_game_events(self.team_name, self.game, name='%s_%s_%s_events' % (self.team_name, self.opponent_name, self.date_game)))
 		self.manager.current = '%s_%s_%s_events' % (self.team_name, self.opponent_name, self.date_game)
 
+	def _go_list_game_temp(self, *args):
+		if not self.manager.has_screen('%s_%s_%s_temp' % (self.team_name, self.opponent_name, self.date_game)):
+			self.manager.add_widget(List_game_temp(self.team_name, self.game, name='%s_%s_%s_temp' % (self.team_name, self.opponent_name, self.date_game)))
+		self.manager.current = '%s_%s_%s_temp' % (self.team_name, self.opponent_name, self.date_game)
+
 	def _go_game_stats(self, *args):
 		if not self.manager.has_screen('%s_%s_%s_stats' % (self.team_name, self.opponent_name, self.date_game)):
 			self.manager.add_widget(Game_stats(self.team_name, self.game, name='%s_%s_%s_stats' % (self.team_name, self.opponent_name, self.date_game)))
 		self.manager.current = '%s_%s_%s_stats' % (self.team_name, self.opponent_name, self.date_game)
+
+	def _go_list_records(self, *args):
+		if not self.manager.has_screen('%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)):
+			self.manager.add_widget(List_game_records(self.team_name, self.game, self.name, name='%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)))
+		self.manager.current = '%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)
 
 	def _confirm_popup(self, *args):
 		content = GridLayout(cols=2)
@@ -195,12 +248,12 @@ class Closed_game(Normal_screen):
 		cancel_btn = Button(text='Cancel')
 		content.add_widget(cancel_btn)
 
-		self.popup = Popup(title="Confirm you want to delete this game's records", content=content, size_hint=(0.8, 0.4))
-		cancel_btn.bind(on_press=self.popup.dismiss)
-		confirm_btn.bind(on_press=self.delete_game)
+		self.popup = Popup(title="Confirm you want to delete this game from database", content=content, size_hint=(0.8, 0.4))
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self._delete_game)
 		self.popup.open()
 
-	def delete_game(self, *args):
+	def _delete_game(self, *args):
 		self.popup.dismiss()
 		with lite.connect('allsports.db') as conn:
 			cur = conn.cursor()
@@ -220,62 +273,50 @@ class Open_game(Normal_screen):
 		self.opponent_name = game[0]
 		self.date_game = game[1]
 		self.game = game
+		self.mRecorder = None
+		self.rec = False
 		
 		root = BoxLayout(orientation='vertical')
-		"""
-		if platform == 'android':
-			self.rec = False
-			
-			MediaRecorder = autoclass('android.media.MediaRecorder')
-			AudioSource = autoclass('android.media.MediaRecorder$AudioSource')
-			OutputFormat = autoclass('android.media.MediaRecorder$OutputFormat')
-			AudioEncoder = autoclass('android.media.MediaRecorder$AudioEncoder')
-
-			self.mRecorder = MediaRecorder()
-			self.mRecorder.setAudioSource(AudioSource.MIC)
-			self.mRecorder.setOutputFormat(OutputFormat.THREE_GPP)
-			self.mRecorder.setOutputFile('testrecorder.3gp')
-			self.mRecorder.setAudioEncoder(AudioEncoder.AMR_NB)
-			self.mRecorder.prepare()
-
-		if platform == 'android':	
-			bl = BoxLayout(size_hint_y=.1)
-			bl.add_widget(Title_lb(text='Running', color=(0,1,0,1), size_hint_x=.9))
-			bl_voice_record = Form_btn(text='Rec', background_color=(0,0,1), size_hint_x=.1)
-			bl_voice_record.bind(on_press=self.record_voice)
-			bl.add_widget(bl_voice_record)
-			root.add_widget(bl)
-		else:
-		"""
-		root.add_widget(Title_lb(text='Running', color=(0,1,0,1))) #ident
-
-		root.add_widget(Title_lb(text= '%s vs %s' % (self.team_name, self.opponent_name), size_hint_y=.1))
 		
+		root.add_widget(Title_lb(text='Running: %s vs %s' % (self.team_name, self.opponent_name), color=(0,1,0,1)))
+
+		if platform == 'android':
+			bl = BoxLayout(size_hint_y=.15)
+
+			bl_voice_record = Form_btn(text='Rec', background_color=(0,1,0,1))
+			bl_voice_record.bind(on_release=self._record_voice)
+			bl.add_widget(bl_voice_record)
+
+			bl_list_records = Form_btn(text='Recs')
+			bl_list_records.bind(on_release=self._go_list_records)
+			bl.add_widget(bl_list_records)
+
+			root.add_widget(bl)
 
 		bl_buttons = BoxLayout(size_hint_y=.15)
 		
 		b_add_event = New_btn(text='Add', size_hint_y=1)
-		b_add_event.bind(on_press=partial(self._event_popup, -1, -1))
+		b_add_event.bind(on_release=partial(self._event_popup, -1, -1))
 		bl_buttons.add_widget(b_add_event)
 
 		b_stats = List_btn(text='Stats', background_color=(1,1,0,1), size_hint_y=1)
-		b_stats.bind(on_press=self._go_game_stats)
+		b_stats.bind(on_release=self._go_game_stats)
 		bl_buttons.add_widget(b_stats)
 
 		b_heat = List_btn(text='Heat', background_color=(0,1,1,1), size_hint_y=1)
-		b_heat.bind(on_press=self._go_list_game_heats)
+		b_heat.bind(on_release=self._go_list_game_heats)
 		bl_buttons.add_widget(b_heat)
 
 		b_list_game_events = Nav_btn(text='Events', size_hint_y=1)
-		b_list_game_events.bind(on_press=self._go_list_game_events)
+		b_list_game_events.bind(on_release=self._go_list_game_events)
 		bl_buttons.add_widget(b_list_game_events)
 
 		b_close = Red_btn(text='Close', size_hint_y=1)
-		b_close.bind(on_press=self._confirm_popup)
+		b_close.bind(on_release=self._confirm_popup)
 		bl_buttons.add_widget(b_close)
 
 		b_back = Back_btn(text='Back', size_hint_y=1)
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl_buttons.add_widget(b_back)
 
 		root.add_widget(bl_buttons)
@@ -295,13 +336,45 @@ class Open_game(Normal_screen):
 		
 		self.add_widget(root)
 
-	def record_voice(self, *args):
-		if not self.rec:
-			self.mRecorder.start()
-			self.rec.record = True
-		else:
-			self.mRecorder.stop()
-			self.rec.record = False
+	def _record_voice(self, button, *args):
+		try:
+			if self.rec:
+				self.mRecorder.stop()
+				self.rec = False
+				button.background_color = (0, 1, 0, 1)
+
+				conn = lite.connect('allsports.db')
+				try:
+					with conn:
+						cur = conn.cursor()
+						cur.execute('pragma foreign_keys = on;')
+						cur.execute('create table if not exists records(id integer primary key autoincrement, game_id integer, tape blob, foreign key (game_id) references games(id) on delete cascade on update cascade);')
+						cur.execute('insert into records (game_id, tape) values(?,?);', (self.game[3], lite.Binary(open('/sdcard/temp_record.mp3', 'rb').read())))
+						pp = W_popup('Audio successfuly recorded.', 'Success!')
+						os.remove('/sdcard/temp_record.mp3')
+						pp.open()
+				except Exception as exc:
+					pp = W_popup(str(exc) ,'Error!')
+					pp.open()
+
+			else:
+				MediaRecorder = autoclass('android.media.MediaRecorder')
+				AudioSource = autoclass('android.media.MediaRecorder$AudioSource')
+				OutputFormat = autoclass('android.media.MediaRecorder$OutputFormat')
+				AudioEncoder = autoclass('android.media.MediaRecorder$AudioEncoder')
+
+				self.mRecorder = MediaRecorder()
+				self.mRecorder.setAudioSource(AudioSource.MIC)
+				self.mRecorder.setOutputFormat(OutputFormat.MPEG_4)
+				self.mRecorder.setOutputFile('/sdcard/temp_record.mp3')
+				self.mRecorder.setAudioEncoder(AudioEncoder.AAC)
+				self.mRecorder.prepare()
+				self.mRecorder.start()
+				self.rec = True
+				button.background_color = (1, 0, 0, 1)
+		except Exception as exc:
+			pp = W_popup(str(exc) ,'Error!')
+			pp.open()
 
 	def _click(self, *args):
 		if self.b_field.collide_point(*args[1].pos):
@@ -321,6 +394,11 @@ class Open_game(Normal_screen):
 		if not self.manager.has_screen('%s_%s_%s_heats' % (self.team_name, self.opponent_name, self.date_game)):
 			self.manager.add_widget(List_game_heats(self.team_name, self.game, self.name, name='%s_%s_%s_heats' % (self.team_name, self.opponent_name, self.date_game)))
 		self.manager.current = '%s_%s_%s_heats' % (self.team_name, self.opponent_name, self.date_game)
+
+	def _go_list_records(self, *args):
+		if not self.manager.has_screen('%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)):
+			self.manager.add_widget(List_game_records(self.team_name, self.game, self.name, name='%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)))
+		self.manager.current = '%s_%s_%s_records' % (self.team_name, self.opponent_name, self.date_game)
 	
 	def _confirm_popup(self, *args):
 		content = GridLayout(cols=2)
@@ -330,11 +408,11 @@ class Open_game(Normal_screen):
 		content.add_widget(cancel_btn)
 
 		self.popup = Popup(title="Confirm you want to close this game", content=content, size_hint=(0.8, 0.4))
-		cancel_btn.bind(on_press=self.popup.dismiss)
-		confirm_btn.bind(on_press=self.close_game)
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self._close_game)
 		self.popup.open()
 
-	def close_game(self, *args):
+	def _close_game(self, *args):
 		self.popup.dismiss()
 		with lite.connect('allsports.db') as conn:
 			cur = conn.cursor()
@@ -369,7 +447,7 @@ class Open_game(Normal_screen):
 		root.add_widget(self.ti_time)
 
 		confirm_btn = Form_btn(text='Confirm')
-		confirm_btn.bind(on_press=partial(self._confirm_event, x, y))
+		confirm_btn.bind(on_release=partial(self._confirm_event, x, y))
 		root.add_widget(confirm_btn)
 		cancel_btn = Form_btn(text='Cancel')
 		root.add_widget(cancel_btn)
@@ -378,7 +456,7 @@ class Open_game(Normal_screen):
 		self.popup = Popup(title="New event",
               content=content,
               size_hint=(1, 1))
-		cancel_btn.bind(on_press=self.cancel_popup)
+		cancel_btn.bind(on_release=self.cancel_popup)
 		self.popup.open()
 
 	def cancel_popup(self, *args):
@@ -388,11 +466,24 @@ class Open_game(Normal_screen):
 			self.popup.dismiss()
 
 	def on_back_pressed(self, *args):
+		if platform == 'android' and self.mRecorder:
+			self.mRecorder.release()
 		self.manager.current = self.team_name + '_list_games'
 		self.manager.remove_widget(self.manager.get_screen(self.name))
 
 	def _confirm_event(self, x, y, *args):
 		self.ti_time.focus = False
+
+		with lite.connect('allsports.db') as conn:
+			cur = conn.cursor()
+			cur.execute('select games_length from teams where name=?;', (self.team_name,))
+			games_length = cur.fetchall()[0][0]
+
+		if self.ti_time.text and (int(self.ti_time.text) > games_length or int(self.ti_time.text) < 1):
+			pp = W_popup('Time of event must be empty or between 1-%d!'%games_length ,'Error!')				
+			pp.open()
+			return
+
 		if self.events_list.text!="Select an event" and self.players_list.text != "Select a player":
 			with lite.connect('allsports.db') as conn:
 				cur = conn.cursor()

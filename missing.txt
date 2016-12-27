@@ -1,0 +1,5 @@
+subtipos de eventos
+importar jogadores de outras equipas
+csv: jogadores, jogo, equipa
+renomear equipa
+treinos

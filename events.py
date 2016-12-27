@@ -23,12 +23,12 @@ class List_events(Normal_screen):
 			if len(names):
 				for name in names:
 					b_event = List_btn(text=name[1], background_color=(.7,0,1,1))
-					b_event.bind(on_press=partial(self._go_event, b_event))
+					b_event.bind(on_release=partial(self._go_event, b_event))
 					bl.add_widget(b_event)
 			else:
 				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
@@ -64,9 +64,9 @@ class Create_event(Normal_screen):
 		fl.add_widget(self.ti_name)
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)
@@ -117,15 +117,15 @@ class Event(Normal_screen):
 		bl.add_widget(Title_lb(text='Event: %s'%(event_name)))
 		
 		b_rename = Nav_btn(text='Rename')
-		b_rename.bind(on_press=self._go_rename_event)
+		b_rename.bind(on_release=self._go_rename_event)
 		bl.add_widget(b_rename)
 		
 		b_delete = Red_btn(text='Delete')
-		b_delete.bind(on_press=self._confirm_popup)
+		b_delete.bind(on_release=self._confirm_popup)
 		bl.add_widget(b_delete)
 		
 		b_back = Back_btn(text='Back')
-		b_back.bind(on_press=self.on_back_pressed)
+		b_back.bind(on_release=self.on_back_pressed)
 		bl.add_widget(b_back)
 		
 		root.add_widget(bl)
@@ -141,8 +141,8 @@ class Event(Normal_screen):
 		self.popup = Popup(title="Confirm you want to delete %s\'s records" % (self.event_name),
               content=content,
               size_hint=(0.8, 0.4))
-		cancel_btn.bind(on_press=self.popup.dismiss)
-		confirm_btn.bind(on_press=self.delete_event)
+		cancel_btn.bind(on_release=self.popup.dismiss)
+		confirm_btn.bind(on_release=self.delete_event)
 		self.popup.open()
 
 	def delete_event(self, *args):
@@ -186,9 +186,9 @@ class Rename_event(Normal_screen):
 		fl.add_widget(self.new_event_name)
 		
 		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
-		b_conf.bind(on_press=self._confirm)
+		b_conf.bind(on_release=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
-		b_cancel.bind(on_press=self.on_back_pressed)
+		b_cancel.bind(on_release=self.on_back_pressed)
 		
 		fl.add_widget(b_conf)
 		fl.add_widget(b_cancel)
