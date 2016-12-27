@@ -2,6 +2,6 @@
 *.7z
 *.zip
 *.db
-__pychache__
+__*
 bin/*
 
