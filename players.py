@@ -1,5 +1,5 @@
 from style import *
-from statistics import List_player_stats
+from statistics import List_player_stats, List_player_heats
 
 class List_players(Normal_screen):
 	def __init__(self, team_name, **args):
@@ -23,11 +23,11 @@ class List_players(Normal_screen):
 			names = cur.fetchall()
 			if len(names):
 				for name in names:
-					b_player = List_btn(text=name[0], background_color=(.7,0,1,1))
+					b_player = List_btn(text=name[0])
 					b_player.bind(on_press=partial(self._go_player, b_player))
 					bl.add_widget(b_player)
 			else:
-				bl.add_widget(List_btn(text='No records to show', background_color=(0,0,0,1)))
+				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
 		b_back.bind(on_press=self.on_back_pressed)
 		bl.add_widget(b_back)
@@ -64,7 +64,7 @@ class Create_player(Normal_screen):
 		self.ti_name = TextInput(hint_text='Write your player\'s name', multiline=False)
 		fl.add_widget(self.ti_name)
 		
-		b_conf = Form_btn(text='Confirm')
+		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
 		b_conf.bind(on_press=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
 		b_cancel.bind(on_press=self.on_back_pressed)
@@ -78,8 +78,9 @@ class Create_player(Normal_screen):
 
 	def on_enter(self, **args):
 		self.ti_name.focus = True
-	
+
 	def _confirm(self, *args):
+		self.ti_name.focus = False
 		try:	
 			with lite.connect('allsports.db') as conn:
 				cur = conn.cursor()
@@ -96,8 +97,11 @@ class Create_player(Normal_screen):
 		
 
 	def on_back_pressed(self, *args):
-		self.manager.current = self.team_name
-		self.manager.remove_widget(self.manager.get_screen(self.name))
+		if self.ti_name.focus == True:
+			self.ti_name.focus = False
+		else:
+			self.manager.current = self.team_name
+			self.manager.remove_widget(self.manager.get_screen(self.name))
 
 
 ###################################################
@@ -118,6 +122,10 @@ class Player(Normal_screen):
 		b_stats.bind(on_press=self._go_list_stats)
 		bl.add_widget(b_stats)
 
+		b_heats= List_btn(text='Heats', background_color=(1,1,0,1))
+		b_heats.bind(on_press=self._go_list_heats)
+		bl.add_widget(b_heats)
+
 		b_rename = Nav_btn(text='Rename')
 		b_rename.bind(on_press=self._go_rename)
 		bl.add_widget(b_rename)
@@ -137,6 +145,11 @@ class Player(Normal_screen):
 		if not self.manager.has_screen(self.team_name + '_' + self.player_name + '_list_stats'):
 			self.manager.add_widget(List_player_stats(self.team_name, self.player_name, name=self.team_name + '_' + self.player_name + '_list_stats'))
 		self.manager.current = self.team_name + '_' + self.player_name + '_list_stats'
+
+	def _go_list_heats(self, *args):
+		if not self.manager.has_screen(self.team_name + '_' + self.player_name + '_list_heats'):
+			self.manager.add_widget(List_player_heats(self.team_name, self.player_name, name=self.team_name + '_' + self.player_name + '_list_heats'))
+		self.manager.current = self.team_name + '_' + self.player_name + '_list_heats'
 
 	def _confirm_popup(self, *args):
 		content = GridLayout(cols=2)
@@ -161,22 +174,23 @@ class Player(Normal_screen):
 			with lite.connect('allsports.db') as conn:
 				cur = conn.cursor()
 				cur.execute('pragma foreign_keys = on;')
-				cur.execute('select * from teams')
+				cur.execute('select name from teams;')
 				res = cur.fetchall()
-				res = sum([ord(j) for i in res for j in i])
-				cur.execute('select * from game_events')
+				res = sum([ord(j[0]) for i in res for j in i])
+				cur.execute('select name from players;')
 				res2 = cur.fetchall()
 				try:
-					res += sum([ord(j) for i in res2 for j in i])
+					res += sum([ord(j[0]) for i in res2 for j in i])
 				except:
 					pass
 				rand = random.randint(0, res*1000000)
 				print(rand)
-				cur.execute('update players set visible=0, name=? where name=? and team_name=?', (self.player_name+'_removed_'+str(rand), self.player_name, self.team_name))
+				cur.execute('update players set visible=0, name=? where name=? and team_name=?;', (self.player_name+'_removed_'+str(rand), self.player_name, self.team_name))
 			self.manager.current = self.team_name
 			self.manager.remove_widget(self.manager.get_screen(self.name))
 		except Exception as exc:
-			print(exc)
+			pp = W_popup(str(exc) ,'Error!')
+			pp.open()
 
 	def on_back_pressed(self, *args):
 		self.manager.current = self.team_name + '_list_players'
@@ -202,7 +216,7 @@ class Rename_player(Normal_screen):
 		self.new_player_name = TextInput(hint_text='Write new player\'s name', multiline=False)
 		fl.add_widget(self.new_player_name)
 		
-		b_conf = Form_btn(text='Confirm')
+		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
 		b_conf.bind(on_press=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
 		b_cancel.bind(on_press=self.on_back_pressed)
@@ -232,5 +246,8 @@ class Rename_player(Normal_screen):
 			self.manager.remove_widget(self.manager.get_screen(self.name))
 			
 	def on_back_pressed(self, *args):
-		self.manager.current = self.team_name + '_list_players'
-		self.manager.remove_widget(self.manager.get_screen(self.name))
+		if self.new_player_name.focus == True:
+			self.new_player_name.focus = False
+		else:	
+			self.manager.current = self.team_name + '_list_players'
+			self.manager.remove_widget(self.manager.get_screen(self.name))

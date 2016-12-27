@@ -26,7 +26,7 @@ class List_events(Normal_screen):
 					b_event.bind(on_press=partial(self._go_event, b_event))
 					bl.add_widget(b_event)
 			else:
-				bl.add_widget(List_btn(text='No records to show', background_color=(0,0,0,1)))
+				bl.add_widget(List_btn(text='No records to show', background_color=(1,1,1,0)))
 		b_back = Back_btn(text='Back')
 		b_back.bind(on_press=self.on_back_pressed)
 		bl.add_widget(b_back)
@@ -63,7 +63,7 @@ class Create_event(Normal_screen):
 		self.ti_name = TextInput(hint_text='Write new event\'s name', multiline=False)
 		fl.add_widget(self.ti_name)
 		
-		b_conf = Form_btn(text='Confirm')
+		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
 		b_conf.bind(on_press=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
 		b_cancel.bind(on_press=self.on_back_pressed)
@@ -79,6 +79,7 @@ class Create_event(Normal_screen):
 		self.ti_name.focus = True
 	
 	def _confirm(self, *args):
+		self.ti_name.focus = False
 		try:
 			with lite.connect('allsports.db') as conn:
 				cur = conn.cursor()
@@ -94,8 +95,11 @@ class Create_event(Normal_screen):
 			self.ti_name.text = ''
 			
 	def on_back_pressed(self, *args):
-		self.manager.current = self.team_name
-		self.manager.remove_widget(self.manager.get_screen(self.name))
+		if self.ti_name.focus == True:
+			self.ti_name.focus = False
+		else:
+			self.manager.current = self.team_name
+			self.manager.remove_widget(self.manager.get_screen(self.name))
 
 
 ###################################################
@@ -145,6 +149,7 @@ class Event(Normal_screen):
 		self.popup.dismiss()
 		with lite.connect('allsports.db') as conn:
 			cur = conn.cursor()
+			cur.execute("pragma foreign_keys=on;")
 			cur.execute('delete from events where name=? and team_name=?;', (self.event_name, self.team_name))
 		self.manager.current = self.team_name
 		self.manager.remove_widget(self.manager.get_screen(self.name))
@@ -180,7 +185,7 @@ class Rename_event(Normal_screen):
 		self.new_event_name = TextInput(hint_text='Write new event\'s name', multiline=False)
 		fl.add_widget(self.new_event_name)
 		
-		b_conf = Form_btn(text='Confirm')
+		b_conf = Form_btn(text='Confirm', background_color=(.5,.8,.5,1))
 		b_conf.bind(on_press=self._confirm)
 		b_cancel = Form_btn(text='Cancel')
 		b_cancel.bind(on_press=self.on_back_pressed)
@@ -204,5 +209,8 @@ class Rename_event(Normal_screen):
 		self.manager.remove_widget(self.manager.get_screen(self.name))
 			
 	def on_back_pressed(self, *args):
-		self.manager.current = self.team_name + '_list_events'
-		self.manager.remove_widget(self.manager.get_screen(self.name))
+		if self.new_event_name.focus == True:
+			self.new_event_name.focus = False
+		else:
+			self.manager.current = self.team_name + '_list_events'
+			self.manager.remove_widget(self.manager.get_screen(self.name))

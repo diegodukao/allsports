@@ -16,7 +16,7 @@ source.dir = .
 source.include_exts = py
 
 # (list) Source files to exclude (let empty to not exclude anything)
-#source.exclude_exts =
+source.exclude_exts = ".txt"
 
 # (list) List of directory to exclude (let empty to not exclude anything)
 #source.exclude_dirs = tests, bin
@@ -29,11 +29,11 @@ source.include_exts = py
 #version.filename = %(source.dir)s/main.py
 
 # (str) Application versioning (method 2)
-version = 1.0
+version = 2.0
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = sqlite3,kivy,requests
+requirements = sqlite3, kivy, numpy, pil
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -60,7 +60,7 @@ fullscreen = 1
 #
 
 # (list) Permissions
-android.permissions =
+android.permissions = RECORD_AUDIO
 
 # (int) Android API to use
 android.api = 15
