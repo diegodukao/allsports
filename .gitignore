@@ -1,0 +1,7 @@
+*.pyc
+*.7z
+*.zip
+*.db
+__pychache__
+bin/*
+
