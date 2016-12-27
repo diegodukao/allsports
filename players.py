@@ -23,7 +23,7 @@ class List_players(Normal_screen):
 			names = cur.fetchall()
 			if len(names):
 				for name in names:
-					b_player = List_btn(text=name[0])
+					b_player = List_btn(text=name[0], background_color=(.7,0,1,1))
 					b_player.bind(on_press=partial(self._go_player, b_player))
 					bl.add_widget(b_player)
 			else:
@@ -112,7 +112,7 @@ class Player(Normal_screen):
 		bl = Base_layout()
 		bl.bind(minimum_height=bl.setter('height'))
 		
-		bl.add_widget(Title_lb(text=player_name))
+		bl.add_widget(Title_lb(text='Player: %s'%(player_name)))
 
 		b_stats = List_btn(text='Statistics', background_color=(1,1,0,1))
 		b_stats.bind(on_press=self._go_list_stats)
@@ -140,14 +140,12 @@ class Player(Normal_screen):
 
 	def _confirm_popup(self, *args):
 		content = GridLayout(cols=2)
-		confirm_btn = Form_btn(text='Confirm', background_color=(1, 0, 0, 1))
+		confirm_btn = Button(text='Confirm', background_color=(1, 0, 0, 1))
 		content.add_widget(confirm_btn)
-		cancel_btn = Form_btn(text='Cancel')
+		cancel_btn = Button(text='Cancel')
 		content.add_widget(cancel_btn)
 
-		self.popup = Popup(title="Confirm you want to delete %s records" % (self.player_name),
-              content=content,
-              size_hint=(0.8, 0.4))
+		self.popup = Popup(title="Confirm you want to delete %s records" % (self.player_name), content=content, size_hint=(0.8, 0.4))
 		cancel_btn.bind(on_press=self.popup.dismiss)
 		confirm_btn.bind(on_press=self.delete_player)
 		self.popup.open()
@@ -159,17 +157,26 @@ class Player(Normal_screen):
 
 	def delete_player(self, *args):
 		self.popup.dismiss()
-
-		with lite.connect('allsports.db') as conn:
-			cur = conn.cursor()
-			cur.execute('select * from teams')
-			res = cur.fetchall()
-			res = sum([ord(j) for i in res for j in i])
-			rand = random.randint(0, res*100000)
-			print(rand)
-			cur.execute('update players set visible=0, name=? where name=? and team_name=?', (self.player_name+'_removed_'+str(rand), self.player_name, self.team_name))
-		self.manager.current = self.team_name
-		self.manager.remove_widget(self.manager.get_screen(self.name))
+		try:
+			with lite.connect('allsports.db') as conn:
+				cur = conn.cursor()
+				cur.execute('pragma foreign_keys = on;')
+				cur.execute('select * from teams')
+				res = cur.fetchall()
+				res = sum([ord(j) for i in res for j in i])
+				cur.execute('select * from game_events')
+				res2 = cur.fetchall()
+				try:
+					res += sum([ord(j) for i in res2 for j in i])
+				except:
+					pass
+				rand = random.randint(0, res*1000000)
+				print(rand)
+				cur.execute('update players set visible=0, name=? where name=? and team_name=?', (self.player_name+'_removed_'+str(rand), self.player_name, self.team_name))
+			self.manager.current = self.team_name
+			self.manager.remove_widget(self.manager.get_screen(self.name))
+		except Exception as exc:
+			print(exc)
 
 	def on_back_pressed(self, *args):
 		self.manager.current = self.team_name + '_list_players'

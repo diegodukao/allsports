@@ -13,6 +13,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
 from kivy.garden.graph import Graph, MeshLinePlot
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.accordion import Accordion, AccordionItem
 import random
 
 
@@ -88,6 +89,8 @@ class Title_lb(Label):
 		super(Title_lb, self).__init__(**args)
 		self.size_hint_y = None
 		self.height = 70
+		self.bold = True
+		self.font_size = '16sp'
 
 class Form_lb(Label):
 	def __init__(self, **args):

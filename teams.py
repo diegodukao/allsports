@@ -77,7 +77,7 @@ class List_teams(Normal_screen):
 			names = cur.fetchall()
 			if len(names):
 				for name in names:
-					b_team = List_btn(text=name[0])
+					b_team = List_btn(text=name[0], background_color=(.7,0,1,1))
 					b_team.bind(on_press=partial(self._go_team, b_team))
 					bl.add_widget(b_team)
 			else:
@@ -109,7 +109,7 @@ class Team(Normal_screen):
 		bl = Base_layout()
 		bl.bind(minimum_height=bl.setter('height'))
 		
-		bl.add_widget(Title_lb(text=team_name))
+		bl.add_widget(Title_lb(text='Team: %s'%(team_name)))
 		
 		b_players = Nav_btn(text='Players')
 		b_players.bind(on_press=self._go_list_players)

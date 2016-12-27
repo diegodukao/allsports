@@ -22,7 +22,7 @@ class List_events(Normal_screen):
 			names = cur.fetchall()
 			if len(names):
 				for name in names:
-					b_event = List_btn(text=name[1])
+					b_event = List_btn(text=name[1], background_color=(.7,0,1,1))
 					b_event.bind(on_press=partial(self._go_event, b_event))
 					bl.add_widget(b_event)
 			else:
@@ -110,7 +110,7 @@ class Event(Normal_screen):
 		bl = Base_layout()
 		bl.bind(minimum_height=bl.setter('height'))
 		
-		bl.add_widget(Title_lb(text=event_name))
+		bl.add_widget(Title_lb(text='Event: %s'%(event_name)))
 		
 		b_rename = Nav_btn(text='Rename')
 		b_rename.bind(on_press=self._go_rename_event)
