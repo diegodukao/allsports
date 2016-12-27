@@ -1,4 +1,5 @@
 AllSports
+Made by Tiago Marques tapmarques@gmail.com
 
 A multiplatform application to manage multiple team of different sports.
 
@@ -15,3 +16,16 @@ Features:
     - Generate time charts (e.g. between games)
     - Record notes (microphone) during each game
     - Export/import database
+
+INSTALLATION
+
+Dependencies:
+    - kivy 1.9.1
+    - pygame
+    - pyjnius
+    - numpy
+    - pil
+    - kivy-garden graph
+
+Adroid:
+    To create .apk use buildozer.
